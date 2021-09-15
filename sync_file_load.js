@@ -1,17 +1,15 @@
 import {
-  readdir,
-  readFile
-} from 'fs/promises';
+  readdirSync,
+  readFileSync
+} from 'fs';
 import { performance } from 'perf_hooks'
 import * as path from 'path';
 
 const DIR_PATH = "./files_to_load"
 
-async function dirFilesToObj (dirPath) {
-    const files = await readdir(dirPath);
-    const fileContents = await Promise.all(
-      files.map(file => readFile(path.join(dirPath, file), "utf8"))
-    )
+function dirFilesToObj (dirPath) {
+    const files =  readdirSync(dirPath);
+    const fileContents = files.map(file => readFileSync(path.join(dirPath, file), "utf8"))
     return Object.assign(...files.map((k, i)=>({[k]: fileContents[i]}) ))
 }
 
@@ -32,7 +30,7 @@ try {
     logOut = true
   }
   var t0 = performance.now()
-  const fileContents = await dirFilesToObj(dirToLoad);
+  const fileContents = dirFilesToObj(dirToLoad);
   var t1 = performance.now()
   if (logOut) {
     console.log(fileContents);
