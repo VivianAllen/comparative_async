@@ -1,5 +1,3 @@
-import asyncio
-import aiofiles
 import os
 import pprint
 import sys
@@ -7,21 +5,19 @@ import timeit
 
 DIR_PATH = "./files_to_load"
 
-async def load_file_contents(filepath):
-    async with aiofiles.open(filepath, 'r') as f:
-        file_contents = await f.read()
+def load_file_contents(filepath):
+    with open(filepath, 'r') as f:
+        file_contents = f.read()
     return file_contents
 
 
-async def dir_files_to_dict(dir_path):
+def dir_files_to_dict(dir_path):
     filenames = os.listdir(dir_path)
-    file_contents = await asyncio.gather(
-        *(load_file_contents(os.path.join(dir_path, filename)) for filename in filenames)
-    )
+    file_contents = (load_file_contents(os.path.join(dir_path, filename)) for filename in filenames)
     return dict(zip(filenames, file_contents))
 
 
-async def main():
+def main():
     args = sys.argv[1:]
 
     if len(args) > 0:
@@ -35,7 +31,7 @@ async def main():
         log_out = True
 
     t0 = timeit.default_timer()
-    file_contents = await dir_files_to_dict(dir_path)
+    file_contents = dir_files_to_dict(dir_path)
     t1 = timeit.default_timer()
 
     if log_out:
@@ -46,5 +42,5 @@ async def main():
 
 
 if __name__=="__main__":
-    asyncio.run(main())
+    main()
 
