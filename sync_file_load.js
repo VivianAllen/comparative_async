@@ -1,3 +1,5 @@
+#!/Users/vivianallen/.nvm/versions/node/v14.17.0/bin/node
+
 import {
   readdirSync,
   readFileSync
@@ -8,7 +10,7 @@ import * as path from 'path';
 const DIR_PATH = "./files_to_load"
 
 function dirFilesToObj (dirPath) {
-    const files =  readdirSync(dirPath);
+    const files = readdirSync(dirPath);
     const fileContents = files.map(file => readFileSync(path.join(dirPath, file), "utf8"))
     return Object.assign(...files.map((k, i)=>({[k]: fileContents[i]}) ))
 }
@@ -17,18 +19,18 @@ function dirFilesToObj (dirPath) {
 // main
 const args = process.argv.slice(2);
 
-var dirToLoad
+var logOut
 if ( args.length > 0) {
-dirToLoad = args[0]
+  logOut = args[0].toLowerCase() === "true" ? true : false
 } else {
-  dirToLoad = DIR_PATH
+  logOut = false
 }
 
-var logOut
+var dirToLoad
 if ( args.length > 1) {
-  logOut = args[1].toLowerCase == "true" ? true : false
+  dirToLoad = args[1]
 } else {
-  logOut = true
+  dirToLoad = DIR_PATH
 }
 
 var t0 = performance.now()

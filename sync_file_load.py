@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import os
 import pprint
 import sys
@@ -21,14 +23,15 @@ def main():
     args = sys.argv[1:]
 
     if len(args) > 0:
-        dir_path = args[0]
+        log_out = True if args[0].lower() == 'true' else False
+    else:
+        log_out = False
+
+    if len(args) > 1:
+        dir_path = args[1]
     else:
         dir_path = DIR_PATH
 
-    if len(args) > 1:
-        log_out = True if args[1].lower() == 'true' else False
-    else:
-        log_out = True
 
     t0 = timeit.default_timer()
     file_contents = dir_files_to_dict(dir_path)

@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import asyncio
 import aiofiles
 import os
@@ -25,14 +27,14 @@ async def main():
     args = sys.argv[1:]
 
     if len(args) > 0:
-        dir_path = args[0]
+        log_out = True if args[0].lower() == 'true' else False
     else:
-        dir_path = DIR_PATH
+        log_out = False
 
     if len(args) > 1:
-        log_out = True if args[1].lower() == 'true' else False
+        dir_path = args[1]
     else:
-        log_out = True
+        dir_path = DIR_PATH
 
     t0 = timeit.default_timer()
     file_contents = await dir_files_to_dict(dir_path)

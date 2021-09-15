@@ -1,3 +1,5 @@
+#!/Users/vivianallen/.nvm/versions/node/v14.17.0/bin/node
+
 import {
   readdir,
   readFile
@@ -19,18 +21,18 @@ async function dirFilesToObj (dirPath) {
 // main
 const args = process.argv.slice(2);
 
-var dirToLoad
+var logOut
 if ( args.length > 0) {
-  dirToLoad = args[0]
+  logOut = args[0].toLowerCase() === "true" ? true : false
 } else {
-  dirToLoad = DIR_PATH
+  logOut = false
 }
 
-var logOut
+var dirToLoad
 if ( args.length > 1) {
-  logOut = args[1].toLowerCase == "true" ? true : false
+  dirToLoad = args[1]
 } else {
-  logOut = true
+  dirToLoad = DIR_PATH
 }
 
 var t0 = performance.now()
