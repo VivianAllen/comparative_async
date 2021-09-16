@@ -1,7 +1,7 @@
 #!/Users/vivianallen/.nvm/versions/node/v14.17.0/bin/node
 
 const {
-readdir,
+  readdir,
   readFile
 } = require('fs/promises')
 const { performance } = require('perf_hooks')
