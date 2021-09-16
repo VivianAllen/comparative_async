@@ -40,7 +40,6 @@ def main():
     if log_out:
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(file_contents)
-
     print(f"All files processed in {(t1 - t0) * 1000} milliseconds")
 
 
