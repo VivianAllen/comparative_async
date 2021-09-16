@@ -2,7 +2,6 @@
   "name": "comparative_async_file_io",
   "version": "1.0.0",
   "description": "",
-  "type": "module",
   "main": "async_file_load.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
