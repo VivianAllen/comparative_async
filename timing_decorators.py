@@ -4,7 +4,12 @@ import timeit
 
 def run_timed_sync(function):
     """
-    Decorator to debug log execution time of decorated synchronous function.
+    Decorator to debug log execution time of decorated synchronous function. Invoked by placing @run_timed_sync
+    above the target function, e.g:
+
+    @run_timed_sync
+    def my_function():
+        do_stuff()
     """
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
@@ -18,7 +23,12 @@ def run_timed_sync(function):
 
 def run_timed_async(function):
     """
-    Decorator to debug log execution time of decorated asynchronous function.
+    Decorator to debug log execution time of decorated asynchronous function. Invoked by placing @run_timed_async
+    above the target coroutine / async function, e.g:
+
+    @run_timed_async
+    async def my_function():
+        await do_stuff()
     """
     @functools.wraps(function)
     async def wrapper(*args, **kwargs):
