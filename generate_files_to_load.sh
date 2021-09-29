@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# Generate set of 20 random text files from 80mb to 100MB in size in 'files_to_load' directory created in directory
+# this script is run from. Files will be named for their size in MB.
+
 mkdir -p ./files_to_load
-size_in_mb=${1-100}
+size_in_mb=100
 
 for n in {0..20}
 do
