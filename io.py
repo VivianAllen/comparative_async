@@ -109,7 +109,7 @@ def run_io_heavy_multithread():
     # sensibly scaled to the specs of the machine you are running the code on. Here we set it to one thread per
     # task in order to ensure the comparison with multiprocessing is fair.
     # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
-    with ThreadPoolExecutor() as executor:
+    with ThreadPoolExecutor(max_workers=4) as executor:
 
         # ThreadPoolExecutor.map takes a function and one or more iterables (lists, tuples, dicts, whatever) that
         # contain the arguments for your function (one iterable for each argument, if your function has multiple
@@ -139,7 +139,7 @@ def run_io_heavy_multiproc():
     # number of processors in the machine you are running the code on (). Here we set it to one process per
     # task in order to ensure the comparison with multithreading is fair.
     # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=4) as executor:
 
         # ProcessPoolExecutor.map takes a function and one or more iterables (lists, tuples, dicts, whatever) that
         # contain the arguments for your function (one iterable for each argument, if your function has multiple
