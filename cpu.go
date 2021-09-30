@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/bradhe/stopwatch"
 )
@@ -22,13 +23,14 @@ func runCpuHeavySync(tensOfMillionsToCountTo []int) {
 }
 
 func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int) {
+	wg := new(sync.WaitGroup)
+	wg.Add(len(tensOfMillionsToCountTo))
 	watch := stopwatch.Start()
-	c := make(chan int)
 	for _, v := range tensOfMillionsToCountTo {
-		go countToNMillionGoroutine(v, c)
-		<-c
+		go countToNMillionGoroutine(v, wg)
+
 	}
-	defer close(c)
+	wg.Wait()
 	watch.Stop()
 	fmt.Println("Goroutines function: time taken", watch.Milliseconds())
 }
@@ -40,10 +42,10 @@ func countToNMillion(n int) {
 	}
 }
 
-func countToNMillionGoroutine(n int, c chan int) {
+func countToNMillionGoroutine(n int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	count := 0
 	for i := 0; i < 1000000*n; i++ {
 		count += i
 	}
-	c <- count
 }
