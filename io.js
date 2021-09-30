@@ -10,6 +10,12 @@ const {
 } = require('fs/promises')
 const { performance } = require('perf_hooks')
 const path = require('path')
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData
+} = require('worker_threads');
 
 const DIR_PATH = "./files_to_load"
 
@@ -74,9 +80,45 @@ async function runIoHeavyAsync () {
 }
 
 
+async function doFileLoadInThread(file, results) {
+  // spawn worker that messages back when done
+  // return promise that resolves when the message is received
+  // NB worker_threads do NOT share memory!
+  const worker = new Worker(__filename, { workerData: { file: file, results: results }});
+  return new Promise((resolve, reject) => {
+    worker.on('message', () => { resolve() })
+  });
+}
+
+
+async function runIoHeavyMultithread() {
+    console.log('Multithreaded')
+    console.log('order as printed by tasks:')
+    const files = await readdir(DIR_PATH);
+    var results = []
+    // start pool of workers, each worker does job, resolves promise then dies?
+    await Promise.all(
+      files.map(async file => { await doFileLoadInThread(path.join(DIR_PATH, file), results) })
+    )
+    printResults(results)
+}
+
+
+function runIoHeavyMultiprocess() {
+
+}
+
+
 async function main () {
-  runTimedSync(runIoHeavySync)
-  runTimedAsync(runIoHeavyAsync)
+  if (isMainThread) {
+    runTimedSync(runIoHeavySync)
+    await runTimedAsync(runIoHeavyAsync)
+    await runTimedAsync(runIoHeavyMultithread)
+  } else {
+    // something something worker data?
+    await loadFileContentsAsync(workerData.file, workerData.results)
+    parentPort.postMessage('done')
+  }
 }
 
 
