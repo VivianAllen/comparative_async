@@ -16,6 +16,7 @@ const {
   parentPort,
   workerData
 } = require('worker_threads');
+const { fork } = require('child_process');
 
 const DIR_PATH = "./files_to_load"
 
@@ -76,41 +77,65 @@ async function ioHeavyAsync () {
 }
 
 
-async function doFileLoadInThread(file, results) {
+async function doFileLoadInThread(file) {
   // spawn worker that messages back when done
   // return promise that resolves when the message is received
   // NB worker_threads do NOT share memory!
-  const worker = new Worker(__filename, { workerData: { file: file }});
+  const workerThread = new Worker(__filename, { workerData: { file: file }});
   return new Promise((resolve, reject) => {
-    worker.on('message', (msg) => { resolve(msg) })
+    workerThread.on('message', (msg) => { resolve(msg) })
   });
 }
 
 
 async function ioHeavyMultithread() {
     const files = await readdir(DIR_PATH);
-    // start pool of workers, each worker does job, resolves promise then dies?
     var results = await Promise.all(
-      files.map(async file => { return await doFileLoadInThread(path.join(DIR_PATH, file), results) })
+      files.map(async file => { return await doFileLoadInThread(path.join(DIR_PATH, file)) })
     )
     return results
 }
 
 
-function ioHeavyMultiprocess() {
+async function doFileLoadInProcess(file) {
+  // spawn worker that messages back when done
+  // return promise that resolves when the message is received
+  // NB worker processes do NOT share memory!
+  const workerProcess = fork(__filename, ['child']);
+  return new Promise((resolve, reject) => {
+    workerProcess.send(file)
+    workerProcess.on('message', (msg) => { resolve(msg) })
+  });
+}
 
+
+async function ioHeavyMultiprocess() {
+  const files = await readdir(DIR_PATH);
+  var results = await Promise.all(
+    files.map(async file => { return await doFileLoadInProcess(path.join(DIR_PATH, file)) })
+  )
+  return results
 }
 
 
 async function main () {
-  if (isMainThread) {
+  const isMainProcess = !(process.argv.length == 3 && process.argv[2] === 'child')
+  if (isMainThread && isMainProcess)  {
     runTimedSync(ioHeavySync)
     await runTimedAsync(ioHeavyAsync)
     await runTimedAsync(ioHeavyMultithread)
-  } else {
+    await runTimedAsync(ioHeavyMultiprocess)
+  } else if (isMainProcess) {
     // something something worker data?
-    var results = await loadFileContentsAsync(workerData.file, workerData.results)
+    var results = await loadFileContentsAsync(workerData.file)
     parentPort.postMessage(results)
+    process.exit()
+  } else if (isMainThread) {
+    process.on('message', async (msg) => {
+      var results = await loadFileContentsAsync(msg)
+      process.send(results)
+      process.exit()
+    })
   }
 }
 
