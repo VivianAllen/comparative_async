@@ -74,8 +74,6 @@ async def io_heavy_async():
     https://docs.python.org/3/library/asyncio-task.html#id1
     """
     filepaths = full_filepaths_in_dir(DIR_PATH)
-    results = []
-
     # asyncio.gather takes one or more function calls and schedules them as asynchronous tasks / coroutines to be
     # performed on an event loop. NB, gather expects to be given the tasks as
     # asyncio.gather(function_call_1, function_call_2, ... etc), so here we use * to unpack / exhaust an iterable
@@ -94,10 +92,10 @@ def io_heavy_multithread():
     filepaths = full_filepaths_in_dir(DIR_PATH)
     # ThreadPoolExecutor creates a 'pool' of threads in which to do tasks (i.e. a set you can use).
     # the max_workers argument (the number of threads in the pool) is optional, and will by default be set to something
-    # sensibly scaled to the specs of the machine you are running the code on. Here we set it to four threads in order
-    # to ensure the comparison with multiprocessing is fair.
+    # sensibly scaled to the specs of the machine you are running the code on. Here we set it to one thread per file
+    # in order to ensure the comparison with multiprocessing is fair.
     # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ThreadPoolExecutor
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=len(filepaths)) as executor:
         # ThreadPoolExecutor.map takes a function and one or more iterables (lists, tuples, dicts, whatever) that
         # contain the arguments for your function (one iterable for each argument, if your function has multiple
         # arguments). ThreadPoolExecutor.map will then schedule the function call as a task to be executed using the
@@ -116,10 +114,10 @@ def io_heavy_multiproc():
     filepaths = full_filepaths_in_dir(DIR_PATH)
     # ProcessPoolExecutor creates a 'pool' of processes in which to do tasks (i.e. a set you can use).
     # the max_workers argument (the number of processes in the pool) is optional, and will by default be set to the
-    # number of processors in the machine you are running the code on (). Here we set it to four processes in order to
-    # ensure the comparison with multithreading is fair.
+    # number of processors in the machine you are running the code on (). Here we set it to one processes per file in
+    # order to ensure the comparison with multithreading is fair.
     # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    with ProcessPoolExecutor(max_workers=len(filepaths)) as executor:
         # ProcessPoolExecutor.map takes a function and one or more iterables (lists, tuples, dicts, whatever) that
         # contain the arguments for your function (one iterable for each argument, if your function has multiple
         # arguments). ProcessPoolExecutor.map will then schedule the function call as a task to be executed using the

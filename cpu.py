@@ -59,7 +59,7 @@ def cpu_heavy_multithread():
 
 
 @print_timing_and_results_sync
-def cpu_heavy_multiproc_no_shared_memory():
+def cpu_heavy_multiproc():
     """
     Run cpu-heavy tasks in a pool of worker processes and return results sorted by processing time.
     """
@@ -81,7 +81,7 @@ def cpu_heavy_multiproc_no_shared_memory():
 def main():
     cpu_heavy_sync()
     cpu_heavy_multithread()
-    cpu_heavy_multiproc_no_shared_memory()
+    cpu_heavy_multiproc()
 
 
 if __name__=="__main__":
