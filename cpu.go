@@ -1,41 +1,34 @@
 package main
 
 import (
-	"fmt"
 	"runtime"
 	"sync"
-
-	"github.com/bradhe/stopwatch"
 )
 
 func main() {
 	tensOfMillionsToCountTo := []int{9, 5, 11, 7}
 	runCpuHeavySync(tensOfMillionsToCountTo)
+	//sets number of available CPUs ==> 1
 	runtime.GOMAXPROCS(1)
-	runCpuHeavyGoroutines(tensOfMillionsToCountTo, 1)
+	runCpuHeavyGoroutines(tensOfMillionsToCountTo)
+	//sets number of available CPUs ==> 8
 	runtime.GOMAXPROCS(8)
-	runCpuHeavyGoroutines(tensOfMillionsToCountTo, 8)
+	runCpuHeavyGoroutines(tensOfMillionsToCountTo)
 }
 
 func runCpuHeavySync(tensOfMillionsToCountTo []int) {
-	watch := stopwatch.Start()
 	for _, v := range tensOfMillionsToCountTo {
 		countToNMillion(v)
 	}
-	watch.Stop()
-	fmt.Println("Synchronous function: time taken", watch.Milliseconds())
 }
 
-func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int, numOfCPUs int) {
+func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int) {
 	wg := new(sync.WaitGroup)
 	wg.Add(len(tensOfMillionsToCountTo))
-	watch := stopwatch.Start()
 	for _, v := range tensOfMillionsToCountTo {
 		go countToNMillionGoroutine(v, wg)
 	}
 	wg.Wait()
-	watch.Stop()
-	fmt.Printf("Goroutines function: num of CPUs: %v, time taken: %v\n", numOfCPUs, watch.Milliseconds())
 }
 
 func countToNMillion(n int) {
