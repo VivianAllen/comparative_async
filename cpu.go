@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 	"sync"
 
 	"github.com/bradhe/stopwatch"
@@ -10,7 +11,10 @@ import (
 func main() {
 	tensOfMillionsToCountTo := []int{9, 5, 11, 7}
 	runCpuHeavySync(tensOfMillionsToCountTo)
-	runCpuHeavyGoroutines(tensOfMillionsToCountTo)
+	runtime.GOMAXPROCS(1)
+	runCpuHeavyGoroutines(tensOfMillionsToCountTo, 1)
+	runtime.GOMAXPROCS(8)
+	runCpuHeavyGoroutines(tensOfMillionsToCountTo, 8)
 }
 
 func runCpuHeavySync(tensOfMillionsToCountTo []int) {
@@ -22,17 +26,16 @@ func runCpuHeavySync(tensOfMillionsToCountTo []int) {
 	fmt.Println("Synchronous function: time taken", watch.Milliseconds())
 }
 
-func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int) {
+func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int, numOfCPUs int) {
 	wg := new(sync.WaitGroup)
 	wg.Add(len(tensOfMillionsToCountTo))
 	watch := stopwatch.Start()
 	for _, v := range tensOfMillionsToCountTo {
 		go countToNMillionGoroutine(v, wg)
-
 	}
 	wg.Wait()
 	watch.Stop()
-	fmt.Println("Goroutines function: time taken", watch.Milliseconds())
+	fmt.Printf("Goroutines function: num of CPUs: %v, time taken: %v\n", numOfCPUs, watch.Milliseconds())
 }
 
 func countToNMillion(n int) {
