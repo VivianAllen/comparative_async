@@ -19,9 +19,12 @@ func main() {
 }
 
 func runCpuHeavySync(tensOfMillionsToCountTo []int) {
+	t := time.Now()
 	for _, v := range tensOfMillionsToCountTo {
 		countToNMillion(v)
 	}
+	timeElapsed := time.Since(t)
+	fmt.Printf("Synchronous function completed all counts in %v\n", timeElapsed)
 }
 
 func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int, cpus int) {
@@ -29,14 +32,17 @@ func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int, cpus int) {
 	c := make(chan string, len(tensOfMillionsToCountTo))
 	wg := new(sync.WaitGroup)
 	wg.Add(len(tensOfMillionsToCountTo))
+	t := time.Now()
 	for _, v := range tensOfMillionsToCountTo {
 		go countToNMillionGoroutine(v, c, wg)
 	}
 	wg.Wait()
+	timeElapsed := time.Since(t)
 	close(c)
 	for message := range c {
 		fmt.Println(message)
 	}
+	fmt.Printf("Total calculation time: %v\n", timeElapsed)
 }
 
 func countToNMillion(n int) {
