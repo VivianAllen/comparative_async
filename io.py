@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import asyncio
 import aiofiles
+import datetime
 import os
 import pprint
 import sys
@@ -12,8 +13,8 @@ from concurrent.futures import (
 from itertools import repeat
 
 from timing_decorators import (
-    run_timed_async,
-    run_timed_sync
+    print_timing_and_results_async,
+    print_timing_and_results_sync
 )
 
 
@@ -24,18 +25,23 @@ def full_filepaths_in_dir(dirpath):
     return [os.path.join(dirpath, filename) for filename in os.listdir(DIR_PATH)]
 
 
-def load_file_contents_sync(filepath, results):
+def get_result_string(filepath, file_contents_length):
+    file_name = os.path.basename(filepath)
+    processing_time = datetime.datetime.now().isoformat()
+    return f"File {file_name} with {file_contents_length} characters processed at {processing_time}"
+
+
+def get_file_contents_length_sync(filepath, results):
     """
     Load contents from filepath, print 'finished' message with filename, and append 'finished' message to shared
     results object.
     """
     with open(filepath, 'r') as f:
         file_contents = f.read()
-    result_str = os.path.basename(filepath)
-    print(result_str, end=', ')
-    results.append(result_str)
+    results.append(get_result_string(filepath, len(file_contents)))
 
-async def load_file_contents_async(filepath, results):
+
+async def get_file_contents_length_async(filepath, results):
     """
     Load contents from filepath asynchronously, print 'finished' message with filename, and append 'finished' message to
     shared results object.
@@ -47,39 +53,28 @@ async def load_file_contents_async(filepath, results):
     # in python: https://docs.python.org/3/library/asyncio-task.html#id1
     async with aiofiles.open(filepath, 'r') as f:
         file_contents = await f.read()
-    result_str = os.path.basename(filepath)
-    print(result_str, end=', ')
-    results.append(result_str)
+    results.append(get_result_string(filepath, len(file_contents)))
 
 
-def print_results(results):
-    print('\norder as reported in shared object:')
-    print(', '.join(str(x) for x in results))
-
-
-@run_timed_sync
+@print_timing_and_results_sync
 def run_io_heavy_sync():
     """
     Run io-heavy tasks with shared results object synchronously in loop and display results.
     """
-    print('Synchronous')
-    print('order as printed by tasks:')
     filepaths = full_filepaths_in_dir(DIR_PATH)
     results = []
     for filepath in filepaths:
-        load_file_contents_sync(filepath, results)
-    print_results(results)
+        get_file_contents_length_sync(filepath, results)
+    return results
 
 
-@run_timed_async
+@print_timing_and_results_async
 async def run_io_heavy_async():
     """
     Run io-heavy tasks with shared results object asynchronously on event loop and display results.
     Note use of 'async' keyword in definition. Things defined with 'async' are known as 'coroutines' in python:
     https://docs.python.org/3/library/asyncio-task.html#id1
     """
-    print('Asynchronous')
-    print('order as printed by tasks:')
     filepaths = full_filepaths_in_dir(DIR_PATH)
     results = []
 
@@ -89,18 +84,16 @@ async def run_io_heavy_async():
     # full of function calls. NB note use of await here to make sure we actually wait for all tasks to finish before
     # proceeding!
     # https://docs.python.org/3/library/asyncio-task.html#running-tasks-concurrently
-    await asyncio.gather(*(load_file_contents_async(filepath, results) for filepath in filepaths))
+    await asyncio.gather(*(get_file_contents_length_async(filepath, results) for filepath in filepaths))
 
-    print_results(results)
+    return results
 
 
-@run_timed_sync
+@print_timing_and_results_sync
 def run_io_heavy_multithread():
     """
     Run io-heavy tasks in a pool of worker threads with a shared results object and display results.
     """
-    print('Multithreaded')
-    print('order as printed by tasks:')
     filepaths = full_filepaths_in_dir(DIR_PATH)
     results = []
 
@@ -119,18 +112,16 @@ def run_io_heavy_multithread():
         # argument in as many times as needed (repeat creates a generator object that always returns the same thing when
         # 'next' is called on it).
         # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
-        executor.map(load_file_contents_sync, filepaths, repeat(results))
+        executor.map(get_file_contents_length_sync, filepaths, repeat(results))
 
-    print_results(results)
+    return results
 
 
-@run_timed_sync
+@print_timing_and_results_sync
 def run_io_heavy_multiproc():
     """
     Run io-heavy tasks in a pool of worker processes with a shared results object and display results.
     """
-    print('Multiprocessed')
-    print('order as printed by tasks:')
     filepaths = full_filepaths_in_dir(DIR_PATH)
     results = []
 
@@ -149,12 +140,12 @@ def run_io_heavy_multiproc():
         # argument in as many times as needed (repeat creates a generator object that always returns the same thing when
         # 'next' is called on it).
         # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
-        executor.map(load_file_contents_sync, filepaths, repeat(results))
+        executor.map(get_file_contents_length_sync, filepaths, repeat(results))
 
     # NB - the results stored in the shared object given to each worker process will be blank! This is because by
     # default separate processes do not share memory with each other! You need to do something fancy to get that to
     # work: https://docs.python.org/3/library/multiprocessing.shared_memory.html
-    print_results(results)
+    return results
 
 
 def main():

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import datetime
 import pprint
 import sys
 import timeit
@@ -10,8 +11,7 @@ from concurrent.futures import (
 from itertools import repeat
 
 from timing_decorators import (
-    run_timed_async,
-    run_timed_sync
+    print_timing_and_results_sync
 )
 
 
@@ -22,35 +22,25 @@ def count_to_n_million(n, results):
     count = 0
     for i in range((10**6) * n):
         count += i
-    print(n, end=', ')
-    results.append(n)
+    results.append(f"Finished Counting to {n} million at {datetime.datetime.now().isoformat()}")
 
 
-def print_results(results):
-    print('\norder as reported in shared object:')
-    print(', '.join(str(x) for x in results))
-
-
-@run_timed_sync
+@print_timing_and_results_sync
 def run_cpu_heavy_sync():
     """
     Run cpu-heavy tasks with shared results object synchronously in loop and display results.
     """
-    print('Synchronous')
-    print('order as printed by tasks:')
     results = []
     for n in TENS_OF_MILLIONS_TO_COUNT_TO:
         count_to_n_million(n, results)
-    print_results(results)
+    return results
 
 
-@run_timed_sync
+@print_timing_and_results_sync
 def run_cpu_heavy_multithread():
     """
     Run cpu-heavy tasks in a pool of worker threads with a shared results object and display results.
     """
-    print('Multithreaded')
-    print('order as printed by tasks:')
     results = []
 
     # ThreadPoolExecutor creates a 'pool' of threads in which to do tasks (i.e. a set you can use).
@@ -70,16 +60,14 @@ def run_cpu_heavy_multithread():
         # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
         executor.map(count_to_n_million, TENS_OF_MILLIONS_TO_COUNT_TO, repeat(results))
 
-    print_results(results)
+    return results
 
 
-@run_timed_sync
+@print_timing_and_results_sync
 def run_cpu_heavy_multiproc():
     """
     Run cpu-heavy tasks in a pool of worker processes with a shared results object and display results.
     """
-    print('Multiprocessed')
-    print('order as printed by tasks:')
     results = []
 
     # ProcessPoolExecutor creates a 'pool' of processes in which to do tasks (i.e. a set you can use).
@@ -102,7 +90,7 @@ def run_cpu_heavy_multiproc():
     # NB - the results stored in the shared object given to each worker process will be blank! This is because by
     # default separate processes do not share memory with each other! You need to do something fancy to get that to
     # work: https://docs.python.org/3/library/multiprocessing.shared_memory.html
-    print_results(results)
+    return results
 
 
 def main():
