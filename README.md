@@ -25,4 +25,5 @@ Version 1.17 used for development.
 
 ### Use
 
+- run cpu-heavy code example with `go run cpu.go`
 - run benchmark tests for cpu-heavy code example with `go test -bench=.`
