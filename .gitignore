@@ -1,3 +1,4 @@
 node_modules
 env/
 files_to_load/
+__pycache__/
