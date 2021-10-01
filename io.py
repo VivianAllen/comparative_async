@@ -57,7 +57,7 @@ async def get_file_contents_length_async(filepath, results):
 
 
 @print_timing_and_results_sync
-def run_io_heavy_sync():
+def io_heavy_sync():
     """
     Run io-heavy tasks with shared results object synchronously in loop and display results.
     """
@@ -69,7 +69,7 @@ def run_io_heavy_sync():
 
 
 @print_timing_and_results_async
-async def run_io_heavy_async():
+async def io_heavy_async():
     """
     Run io-heavy tasks with shared results object asynchronously on event loop and display results.
     Note use of 'async' keyword in definition. Things defined with 'async' are known as 'coroutines' in python:
@@ -90,7 +90,7 @@ async def run_io_heavy_async():
 
 
 @print_timing_and_results_sync
-def run_io_heavy_multithread():
+def io_heavy_multithread():
     """
     Run io-heavy tasks in a pool of worker threads with a shared results object and display results.
     """
@@ -118,7 +118,7 @@ def run_io_heavy_multithread():
 
 
 @print_timing_and_results_sync
-def run_io_heavy_multiproc():
+def io_heavy_multiproc_no_shared_memory():
     """
     Run io-heavy tasks in a pool of worker processes with a shared results object and display results.
     """
@@ -149,14 +149,14 @@ def run_io_heavy_multiproc():
 
 
 def main():
-    run_io_heavy_sync()
+    io_heavy_sync()
     # here we use asyncio.run to start off an async task / coroutine and run it until it has finished. This allows you
     # to call async code as part of a sync function without relying on callbacks or some other signalling method to
     # execute your code in the expected order.
     # https://docs.python.org/3/library/asyncio-task.html#asyncio.run
-    asyncio.run(run_io_heavy_async())
-    run_io_heavy_multithread()
-    run_io_heavy_multiproc()
+    asyncio.run(io_heavy_async())
+    io_heavy_multithread()
+    io_heavy_multiproc_no_shared_memory()
 
 
 if __name__=="__main__":
