@@ -25,12 +25,6 @@ def full_filepaths_in_dir(dirpath):
     return [os.path.join(dirpath, filename) for filename in os.listdir(DIR_PATH)]
 
 
-def get_result_string(filepath, file_contents_length):
-    file_name = os.path.basename(filepath)
-    processing_time = datetime.datetime.now().isoformat()
-    return f"File {file_name} with {file_contents_length} characters processed at {processing_time}"
-
-
 def get_file_contents_length_sync(filepath, results):
     """
     Load contents from filepath, print 'finished' message with filename, and append 'finished' message to shared
@@ -38,7 +32,13 @@ def get_file_contents_length_sync(filepath, results):
     """
     with open(filepath, 'r') as f:
         file_contents = f.read()
-    results.append(get_result_string(filepath, len(file_contents)))
+    results.append(
+        {
+            'filename': os.path.basename(filepath),
+            'file_contents_length': len(file_contents),
+            'processing_time': datetime.datetime.now().isoformat()
+        }
+    )
 
 
 async def get_file_contents_length_async(filepath, results):
@@ -53,7 +53,13 @@ async def get_file_contents_length_async(filepath, results):
     # in python: https://docs.python.org/3/library/asyncio-task.html#id1
     async with aiofiles.open(filepath, 'r') as f:
         file_contents = await f.read()
-    results.append(get_result_string(filepath, len(file_contents)))
+    results.append(
+        {
+            'filename': os.path.basename(filepath),
+            'file_contents_length': len(file_contents),
+            'processing_time': datetime.datetime.now().isoformat()
+        }
+    )
 
 
 @print_timing_and_results_sync
@@ -65,7 +71,7 @@ def io_heavy_sync():
     results = []
     for filepath in filepaths:
         get_file_contents_length_sync(filepath, results)
-    return results
+    return sorted(results, key=lambda x: x['processing_time'])
 
 
 @print_timing_and_results_async
@@ -86,7 +92,7 @@ async def io_heavy_async():
     # https://docs.python.org/3/library/asyncio-task.html#running-tasks-concurrently
     await asyncio.gather(*(get_file_contents_length_async(filepath, results) for filepath in filepaths))
 
-    return results
+    return sorted(results, key=lambda x: x['processing_time'])
 
 
 @print_timing_and_results_sync
@@ -114,7 +120,7 @@ def io_heavy_multithread():
         # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
         executor.map(get_file_contents_length_sync, filepaths, repeat(results))
 
-    return results
+    return sorted(results, key=lambda x: x['processing_time'])
 
 
 @print_timing_and_results_sync
@@ -140,12 +146,12 @@ def io_heavy_multiproc_no_shared_memory():
         # argument in as many times as needed (repeat creates a generator object that always returns the same thing when
         # 'next' is called on it).
         # https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Executor.map
-        executor.map(get_file_contents_length_sync, filepaths, repeat(results))
+        results2 = executor.map(get_file_contents_length_sync, filepaths, repeat(results))
 
     # NB - the results stored in the shared object given to each worker process will be blank! This is because by
     # default separate processes do not share memory with each other! You need to do something fancy to get that to
     # work: https://docs.python.org/3/library/multiprocessing.shared_memory.html
-    return results
+    return sorted(results, key=lambda x: x['processing_time'])
 
 
 def main():

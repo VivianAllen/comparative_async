@@ -28,7 +28,7 @@ def count_to_n_million(n, results):
 @print_timing_and_results_sync
 def cpu_heavy_sync():
     """
-    Run cpu-heavy tasks with shared results object synchronously in loop and display results.
+    Run cpu-heavy tasks with shared results object synchronously in loop.
     """
     results = []
     for n in TENS_OF_MILLIONS_TO_COUNT_TO:
@@ -39,7 +39,7 @@ def cpu_heavy_sync():
 @print_timing_and_results_sync
 def cpu_heavy_multithread():
     """
-    Run cpu-heavy tasks in a pool of worker threads with a shared results object and display results.
+    Run cpu-heavy tasks in a pool of worker threads with a shared results object.
     """
     results = []
 
@@ -66,7 +66,7 @@ def cpu_heavy_multithread():
 @print_timing_and_results_sync
 def cpu_heavy_multiproc_no_shared_memory():
     """
-    Run cpu-heavy tasks in a pool of worker processes with a shared results object and display results.
+    Run cpu-heavy tasks in a pool of worker processes with a shared results object.
     """
     results = []
 
