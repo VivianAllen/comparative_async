@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"runtime"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -10,10 +12,10 @@ func main() {
 	runCpuHeavySync(tensOfMillionsToCountTo)
 	//sets number of available CPUs ==> 1
 	runtime.GOMAXPROCS(1)
-	runCpuHeavyGoroutines(tensOfMillionsToCountTo)
+	runCpuHeavyGoroutines(tensOfMillionsToCountTo, 1)
 	//sets number of available CPUs ==> 8
 	runtime.GOMAXPROCS(8)
-	runCpuHeavyGoroutines(tensOfMillionsToCountTo)
+	runCpuHeavyGoroutines(tensOfMillionsToCountTo, 8)
 }
 
 func runCpuHeavySync(tensOfMillionsToCountTo []int) {
@@ -22,13 +24,19 @@ func runCpuHeavySync(tensOfMillionsToCountTo []int) {
 	}
 }
 
-func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int) {
+func runCpuHeavyGoroutines(tensOfMillionsToCountTo []int, cpus int) {
+	fmt.Printf("\nNumber of CPUs available to function: %v\n", cpus)
+	c := make(chan string, len(tensOfMillionsToCountTo))
 	wg := new(sync.WaitGroup)
 	wg.Add(len(tensOfMillionsToCountTo))
 	for _, v := range tensOfMillionsToCountTo {
-		go countToNMillionGoroutine(v, wg)
+		go countToNMillionGoroutine(v, c, wg)
 	}
 	wg.Wait()
+	close(c)
+	for message := range c {
+		fmt.Println(message)
+	}
 }
 
 func countToNMillion(n int) {
@@ -38,10 +46,13 @@ func countToNMillion(n int) {
 	}
 }
 
-func countToNMillionGoroutine(n int, wg *sync.WaitGroup) {
+func countToNMillionGoroutine(n int, c chan string, wg *sync.WaitGroup) {
 	defer wg.Done()
+	t := time.Now()
 	count := 0
 	for i := 0; i < 1000000*n; i++ {
 		count += i
 	}
+	timeElapsed := time.Since(t)
+	c <- fmt.Sprintf("Goroutine counted to %v million in %v", n, timeElapsed)
 }
