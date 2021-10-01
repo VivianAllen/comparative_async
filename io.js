@@ -20,63 +20,59 @@ const {
 const DIR_PATH = "./files_to_load"
 
 
-function loadFileContentsSync (filePath, results) {
-  readFileSync(filePath, "utf8")
-  resultsStr = path.basename(filePath)
-  process.stdout.write(resultsStr + ', ')
-  results.push(resultsStr)
-}
-
-
-async function loadFileContentsAsync (filePath, results) {
-  await readFile(filePath, "utf8")
-  resultsStr = path.basename(filePath)
-  process.stdout.write(resultsStr + ', ')
-  results.push(resultsStr)
-}
-
-
-function printResults (results) {
-  process.stdout.write('\norder as reported in shared object:\n')
-  console.log(results.join(', '))
-}
-
-
 function runTimedSync(func) {
-  var start_execution_time_ms = performance.now()
-  func();
-  var execution_time_s = (performance.now() - start_execution_time_ms) / 1000
-  console.log(`Function ${func.name} executed in ${execution_time_s}s\n`)
+  const start_execution_time_ms = performance.now()
+  const results = func();
+  const execution_time_s = (performance.now() - start_execution_time_ms) / 1000
+  console.log(`Function ${func.name} executed in ${execution_time_s}s`)
+  console.log(results)
+  console.log('')
 }
 
 
 async function runTimedAsync(func) {
-  var start_execution_time_ms = performance.now()
-  await func();
-  var execution_time_s = (performance.now() - start_execution_time_ms) / 1000
-  console.log(`Function ${func.name} executed in ${execution_time_s}s\n`)
+  const start_execution_time_ms = performance.now()
+  const results = await func();
+  const execution_time_s = (performance.now() - start_execution_time_ms) / 1000
+  console.log(`Function ${func.name} executed in ${execution_time_s}s`)
+  console.log(results)
+  console.log('')
 }
 
 
-function runIoHeavySync () {
-  console.log('Synchronous')
-  console.log('order as printed by tasks:')
+function loadFileContentsSync (filePath) {
+  const file_contents = readFileSync(filePath, "utf8")
+  return {
+    'filename': path.basename(filePath),
+    'file_contents_length': file_contents.length,
+    'processing_time': new Date().toISOString()
+  }
+}
+
+
+async function loadFileContentsAsync (filePath, results) {
+  var file_contents = await readFile(filePath, "utf8")
+  return {
+    'filename': path.basename(filePath),
+    'file_contents_length': file_contents.length,
+    'processing_time': new Date().toISOString()
+  }
+}
+
+
+function ioHeavySync () {
   const files = readdirSync(DIR_PATH);
-  var results = []
-  files.map(file => { loadFileContentsSync(path.join(DIR_PATH, file), results) })
-  printResults(results)
+  const results = files.map(file => { return loadFileContentsSync(path.join(DIR_PATH, file)) })
+  return results
 }
 
 
-async function runIoHeavyAsync () {
-    console.log('Asynchronous')
-    console.log('order as printed by tasks:')
+async function ioHeavyAsync () {
     const files = await readdir(DIR_PATH);
-    var results = []
-    await Promise.all(
-      files.map(async file => { await loadFileContentsAsync(path.join(DIR_PATH, file), results) })
+    var results = await Promise.all(
+      files.map(async file => { return await loadFileContentsAsync(path.join(DIR_PATH, file)) })
     )
-    printResults(results)
+    return results
 }
 
 
@@ -84,40 +80,37 @@ async function doFileLoadInThread(file, results) {
   // spawn worker that messages back when done
   // return promise that resolves when the message is received
   // NB worker_threads do NOT share memory!
-  const worker = new Worker(__filename, { workerData: { file: file, results: results }});
+  const worker = new Worker(__filename, { workerData: { file: file }});
   return new Promise((resolve, reject) => {
-    worker.on('message', () => { resolve() })
+    worker.on('message', (msg) => { resolve(msg) })
   });
 }
 
 
-async function runIoHeavyMultithread() {
-    console.log('Multithreaded')
-    console.log('order as printed by tasks:')
+async function ioHeavyMultithread() {
     const files = await readdir(DIR_PATH);
-    var results = []
     // start pool of workers, each worker does job, resolves promise then dies?
-    await Promise.all(
-      files.map(async file => { await doFileLoadInThread(path.join(DIR_PATH, file), results) })
+    var results = await Promise.all(
+      files.map(async file => { return await doFileLoadInThread(path.join(DIR_PATH, file), results) })
     )
-    printResults(results)
+    return results
 }
 
 
-function runIoHeavyMultiprocess() {
+function ioHeavyMultiprocess() {
 
 }
 
 
 async function main () {
   if (isMainThread) {
-    runTimedSync(runIoHeavySync)
-    await runTimedAsync(runIoHeavyAsync)
-    await runTimedAsync(runIoHeavyMultithread)
+    runTimedSync(ioHeavySync)
+    await runTimedAsync(ioHeavyAsync)
+    await runTimedAsync(ioHeavyMultithread)
   } else {
     // something something worker data?
-    await loadFileContentsAsync(workerData.file, workerData.results)
-    parentPort.postMessage('done')
+    var results = await loadFileContentsAsync(workerData.file, workerData.results)
+    parentPort.postMessage(results)
   }
 }
 
