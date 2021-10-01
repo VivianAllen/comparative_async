@@ -22,7 +22,7 @@ def count_to_n_million(n, results):
     count = 0
     for i in range((10**6) * n):
         count += i
-    results.append(f"Finished Counting to {n} million at {datetime.datetime.now().isoformat()}")
+    results.append(f"Finished counting to {n} million at {datetime.datetime.now().isoformat()}")
 
 
 @print_timing_and_results_sync
