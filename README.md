@@ -18,3 +18,12 @@ NB version 3.9.7 used for development.
 
 ### Cleanup
 - target files can be remove with `./rm_files_to_load.sh`
+
+## Go
+
+Version 1.17 used for development.
+
+### Use
+
+- run cpu-heavy code example with `go run cpu.go`
+- run benchmark tests for cpu-heavy code example with `go test -bench=.`
