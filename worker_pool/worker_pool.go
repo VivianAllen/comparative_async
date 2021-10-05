@@ -8,6 +8,19 @@ import (
 )
 
 func main() {
+	var urls = []string{"https://www.google.com", "https://www.methods.co.uk", "https://www.github.com", "https://www.stackoverflow.com", "https://go.dev", "https://www.youtube.com", "https://www.ons.gov.uk", "https://coronavirusresources.phe.gov.uk/", "https://campaignresources.phe.gov.uk/resources", "https://www.twitter.com", "https://www.facebook.com"}
+
+	workerPool(urls)
+}
+
+type Result struct {
+	workerId     int
+	url          string
+	responseCode int
+	speed        float64
+}
+
+func workerPool(urls []string) {
 	tasks := make(chan string, 10)
 	results := make(chan Result)
 	//sets up wait group to track task completion
@@ -33,15 +46,6 @@ func main() {
 	}(results)
 	//function will wait for wait group counter to reach zero before exiting
 	wg.Wait()
-}
-
-var urls = []string{"https://www.google.com", "https://www.methods.co.uk", "https://www.github.com", "https://www.stackoverflow.com", "https://go.dev", "https://www.youtube.com", "https://www.ons.gov.uk", "https://coronavirusresources.phe.gov.uk/", "https://campaignresources.phe.gov.uk/resources", "https://www.twitter.com", "https://www.facebook.com"}
-
-type Result struct {
-	workerId     int
-	url          string
-	responseCode int
-	speed        float64
 }
 
 //function set up to receive from the urls channel and send to the results channel
