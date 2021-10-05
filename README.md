@@ -27,3 +27,4 @@ Version 1.17 used for development.
 
 - run cpu-heavy code example with `go run cpu.go`
 - run benchmark tests for cpu-heavy code example with `go test -bench=.`
+- run concurrent worker pool example with `go run worker_pool/worker_pool.go`
