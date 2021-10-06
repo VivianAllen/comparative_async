@@ -10,9 +10,13 @@ func TestWorkerPool(t *testing.T) {
 	results := make(chan Result)
 	//because test errors cannot be raised inside a goroutine, we need to make an channel to send and receive errors
 	errs := make(chan error, 10)
-	var urls = []string{"https://www.google.com"}
-	expected := make(map[string]int)
-	expected["https://www.google.com"] = 404
+	var urls = []string{"https://www.google.com", "https://www.methods.co.uk", "https://www.github.com", "https://www.stackoverflow.com"}
+	var expected = map[string]int{
+		"https://www.google.com":        200,
+		"https://www.methods.co.uk":     200,
+		"https://www.github.com":        200,
+		"https://www.stackoverflow.com": 200,
+	}
 	workerPool(urls, tasks, results)
 	go func() {
 		for result := range results {
