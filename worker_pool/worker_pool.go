@@ -52,6 +52,8 @@ func workerPool(urls []string, tasksCh chan string, resultsCh chan Result) chan 
 
 	for _, url := range urls {
 		tasksCh <- url
+		//waitGroup is incremented by 1 for each task
+		wg.Add(1)
 	}
 
 	//closing the results channel allows main function to return once all results have been printed (is this bad
@@ -65,12 +67,10 @@ func workerPool(urls []string, tasksCh chan string, resultsCh chan Result) chan 
 
 //function set up to receive from the urls channel and send to the results channel
 func workerTask(id int, tasksCh <-chan string, resultsCh chan<- Result, wg *sync.WaitGroup) {
-	//each time a url from the tasks channel is used inside the workerTask function, it is removed from the tasks
+	//each time a url from the tasks channel is used inside the workerTask function, it is removed from the tasks.
 	//because the tasks channel is never closed, workerTask goroutines will wait at start of for loop, and will only
 	//exit when the workerPool function is returned
 	for url := range tasksCh {
-		//waitGroup is incremented by 1 for each task
-		wg.Add(1)
 		start := time.Now()
 		resp, err := http.Get(url)
 		timeElapsed := time.Since(start).Seconds()
