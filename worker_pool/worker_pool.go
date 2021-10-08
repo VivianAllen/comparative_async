@@ -33,9 +33,12 @@ func main() {
 	//wait group set up to keep track of tasks completed so that results channel can be closed and main function can
 	//return
 	var wg sync.WaitGroup
+	userUrlSelector := StdInUrlSelector{}
+	userVisitsSetter := StdinVisitsSetter{}
+	userContinueChecker := StdInContinueChecker{}
 	//workerPool is passed pointer to waitGroup to ensure that workerPool execution is scheduled by the same
 	//waitGroup, rather than a copy
-	for result := range workerPool(urls, tasksCh, resultsCh, &wg) {
+	for result := range workerPool(urls, tasksCh, resultsCh, &wg, userUrlSelector, userVisitsSetter, userContinueChecker) {
 		fmt.Println(result)
 		//waitGroup decremented by 1 as each task is completed
 		wg.Done()
@@ -49,7 +52,7 @@ type Result struct {
 	speed        float64
 }
 
-func workerPool(urls []string, tasksCh chan string, resultsCh chan Result, wg *sync.WaitGroup) chan Result {
+func workerPool(urls []string, tasksCh chan string, resultsCh chan Result, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) chan Result {
 	//sets up worker pool
 	for worker := 1; worker <= 3; worker++ {
 		go workerTask(worker, tasksCh, resultsCh, wg)
@@ -62,7 +65,7 @@ func workerPool(urls []string, tasksCh chan string, resultsCh chan Result, wg *s
 	}
 	go func() {
 		wg.Wait()
-		userInput(tasksCh, resultsCh, urls, wg)
+		userInput(tasksCh, resultsCh, urls, wg, us, vs, ucc)
 	}()
 
 	return resultsCh
@@ -97,14 +100,14 @@ func (StdInUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string,
 	wg *sync.WaitGroup) int {
 	fmt.Println("Enter a number between 1 and 11 and press return to run an extended speed test on one of these urls.")
 	scanner.Scan()
-	index, err := strconv.Atoi(scanner.Text())
-	if err != nil {
-		fmt.Println("Input error")
-		userInput(tasksCh, resultsCh, urls, wg)
-	} else if index < 1 || index > 11 {
-		fmt.Println("Error: please enter a number between 1 and 11.")
-		userInput(tasksCh, resultsCh, urls, wg)
-	}
+	index, _ := strconv.Atoi(scanner.Text())
+	// if err != nil {
+	// 	fmt.Println("Input error")
+	// 	userInput(tasksCh, resultsCh, urls, wg)
+	// } else if index < 1 || index > 11 {
+	// 	fmt.Println("Error: please enter a number between 1 and 11.")
+	// 	userInput(tasksCh, resultsCh, urls, wg)
+	// }
 	return index - 1
 }
 
@@ -130,14 +133,14 @@ func (StdinVisitsSetter) SetNumberOfVisits(scanner *bufio.Scanner) int {
 	return visits
 }
 
-type ContinueSetter interface {
+type ContinueChecker interface {
 	Cont(scanner *bufio.Scanner) bool
 }
 
-type StdInContinueSetter struct {
+type StdInContinueChecker struct {
 }
 
-func (cs StdInContinueSetter) Cont(scanner *bufio.Scanner) bool {
+func (cs StdInContinueChecker) Cont(scanner *bufio.Scanner) bool {
 	fmt.Println("Continue? y/n")
 	scanner.Scan()
 	input := scanner.Text()
@@ -151,28 +154,25 @@ func (cs StdInContinueSetter) Cont(scanner *bufio.Scanner) bool {
 	}
 }
 
-func userInput(tasksCh chan<- string, resultsCh chan Result, urls []string, wg *sync.WaitGroup) {
+func userInput(tasksCh chan<- string, resultsCh chan Result, urls []string, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) {
 	fmt.Println("URLS:")
 	for i := 0; i < len(urls); i++ {
 		fmt.Println(i+1, urls[i])
 	}
 	scanner := bufio.NewScanner(os.Stdin)
-	urlSelector := StdInUrlSelector{}
-	index := urlSelector.SelectUrl(scanner, tasksCh, resultsCh, urls, wg)
-	visitsSetter := StdinVisitsSetter{}
-	visits := visitsSetter.SetNumberOfVisits(scanner)
+	index := us.SelectUrl(scanner, tasksCh, resultsCh, urls, wg)
+	visits := vs.SetNumberOfVisits(scanner)
 	for j := 0; j < visits; j++ {
 		tasksCh <- urls[index]
 		wg.Add(1)
 	}
 	go func() {
 		wg.Wait()
-		cs := StdInContinueSetter{}
-		c := cs.Cont(scanner)
+		c := ucc.Cont(scanner)
 		if !c {
 			close(resultsCh)
 			return
 		}
-		userInput(tasksCh, resultsCh, urls, wg)
+		userInput(tasksCh, resultsCh, urls, wg, us, vs, ucc)
 	}()
 }
