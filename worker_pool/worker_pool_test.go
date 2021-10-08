@@ -11,6 +11,11 @@ import (
 type MockUrlSelector struct {
 }
 
+func (MockUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result, urls []string,
+	wg *sync.WaitGroup) int {
+	return rand.Intn(10) + 1
+}
+
 type MockVisitsSetter struct {
 }
 
@@ -46,9 +51,7 @@ func TestWorkerPool(t *testing.T) {
 		"https://www.github.com":        200,
 		"https://www.stackoverflow.com": 200,
 	}
-	fmt.Println("test")
 	workerPool(urls, tasksCh, resultsCh, &wg, mus, mvs, mcc)
-	fmt.Println("test2")
 	go func() {
 		// for i := 0; i < 4; i++ {
 		// 	result := <-resultsCh
