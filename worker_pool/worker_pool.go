@@ -85,30 +85,15 @@ func workerTask(id int, tasksCh <-chan string, resultsCh chan<- Result, wg *sync
 	}
 }
 
-func userInput(tasksCh chan<- string, resultsCh chan Result, urls []string, wg *sync.WaitGroup) {
-	fmt.Println("URLS:")
-	for i := 0; i < len(urls); i++ {
-		fmt.Println(i+1, urls[i])
-	}
-	scanner := bufio.NewScanner(os.Stdin)
-	index := userSelectsUrl(scanner, tasksCh, resultsCh, urls, wg)
-	visits := userSetsNumberOfVisits(scanner)
-	for j := 0; j < visits; j++ {
-		tasksCh <- urls[index]
-		wg.Add(1)
-	}
-	go func() {
-		wg.Wait()
-		c := cont(scanner)
-		if !c {
-			close(resultsCh)
-			return
-		}
-		userInput(tasksCh, resultsCh, urls, wg)
-	}()
+type UrlSelector interface {
+	SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result, urls []string,
+		wg *sync.WaitGroup) int
 }
 
-func userSelectsUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result, urls []string,
+type StdInUrlSelector struct {
+}
+
+func (StdInUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result, urls []string,
 	wg *sync.WaitGroup) int {
 	fmt.Println("Enter a number between 1 and 11 and press return to run an extended speed test on one of these urls.")
 	scanner.Scan()
@@ -123,7 +108,14 @@ func userSelectsUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh cha
 	return index - 1
 }
 
-func userSetsNumberOfVisits(scanner *bufio.Scanner) int {
+type VisitsSetter interface {
+	SetNumberOfVisits(scanner *bufio.Scanner) int
+}
+
+type StdinVisitsSetter struct {
+}
+
+func (StdinVisitsSetter) SetNumberOfVisits(scanner *bufio.Scanner) int {
 	fmt.Println("How many times would you like to check this url?  Enter a number between 1 and 30.")
 	scanner.Scan()
 	visits, err := strconv.Atoi(scanner.Text())
@@ -138,7 +130,14 @@ func userSetsNumberOfVisits(scanner *bufio.Scanner) int {
 	return visits
 }
 
-func cont(scanner *bufio.Scanner) bool {
+type ContinueSetter interface {
+	Cont(scanner *bufio.Scanner) bool
+}
+
+type StdInContinueSetter struct {
+}
+
+func (cs StdInContinueSetter) Cont(scanner *bufio.Scanner) bool {
 	fmt.Println("Continue? y/n")
 	scanner.Scan()
 	input := scanner.Text()
@@ -148,7 +147,32 @@ func cont(scanner *bufio.Scanner) bool {
 	case "n", "N":
 		return false
 	default:
-		return cont(scanner)
+		return cs.Cont(scanner)
 	}
-	return false
+}
+
+func userInput(tasksCh chan<- string, resultsCh chan Result, urls []string, wg *sync.WaitGroup) {
+	fmt.Println("URLS:")
+	for i := 0; i < len(urls); i++ {
+		fmt.Println(i+1, urls[i])
+	}
+	scanner := bufio.NewScanner(os.Stdin)
+	urlSelector := StdInUrlSelector{}
+	index := urlSelector.SelectUrl(scanner, tasksCh, resultsCh, urls, wg)
+	visitsSetter := StdinVisitsSetter{}
+	visits := visitsSetter.SetNumberOfVisits(scanner)
+	for j := 0; j < visits; j++ {
+		tasksCh <- urls[index]
+		wg.Add(1)
+	}
+	go func() {
+		wg.Wait()
+		cs := StdInContinueSetter{}
+		c := cs.Cont(scanner)
+		if !c {
+			close(resultsCh)
+			return
+		}
+		userInput(tasksCh, resultsCh, urls, wg)
+	}()
 }

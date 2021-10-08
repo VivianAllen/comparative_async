@@ -2,12 +2,18 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 )
 
 func TestWorkerPool(t *testing.T) {
-	tasks := make(chan string, 10)
-	results := make(chan Result)
+	//sets up mock functions
+	vs := VisitsSetter{}
+	vs
+
+	tasksCh := make(chan string, 10)
+	resultsCh := make(chan Result)
+	var wg sync.WaitGroup
 	//because test errors cannot be raised inside a goroutine, we need to make an channel to send and receive errors
 	errsCh := make(chan error, 10)
 	var urls = []string{
@@ -21,9 +27,9 @@ func TestWorkerPool(t *testing.T) {
 		"https://www.github.com":        200,
 		"https://www.stackoverflow.com": 200,
 	}
-	workerPool(urls, tasks, results)
+	workerPool(urls, tasksCh, resultsCh, &wg)
 	go func() {
-		for result := range results {
+		for result := range resultsCh {
 			expectedResponseCode := expected[result.url]
 			if result.responseCode != expectedResponseCode {
 				//send errors to errs channel
@@ -35,6 +41,7 @@ func TestWorkerPool(t *testing.T) {
 		//close errs channel when results channel is closed, allowing for loop below to complete and test function to
 		//exit
 		close(errsCh)
+		fmt.Println("test4")
 	}()
 	for err := range errsCh {
 		if err != nil {
