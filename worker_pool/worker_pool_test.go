@@ -53,15 +53,6 @@ func TestWorkerPool(t *testing.T) {
 	}
 	workerPool(urls, tasksCh, resultsCh, &wg, mus, mvs, mcc)
 	go func() {
-		// for i := 0; i < 4; i++ {
-		// 	result := <-resultsCh
-		// 	expectedResponseCode := expected[result.url]
-		// 	if result.responseCode != expectedResponseCode {
-		// 		//send errors to errs channel
-		// 		errsCh <- fmt.Errorf("for url %v expected response code %v, got %v",
-		// 			result.url, expectedResponseCode, result.responseCode)
-		// 	}
-		// }
 		for result := range resultsCh {
 			expectedResponseCode := expected[result.url]
 			if result.responseCode != expectedResponseCode {
@@ -69,7 +60,7 @@ func TestWorkerPool(t *testing.T) {
 				errsCh <- fmt.Errorf("for url %v expected response code %v, got %v",
 					result.url, expectedResponseCode, result.responseCode)
 			}
-
+			wg.Done()
 		}
 		//close errs channel when results channel is closed, allowing for loop below to complete and test function to
 		//exit
