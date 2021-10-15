@@ -11,8 +11,8 @@ import (
 type MockUrlSelector struct {
 }
 
-func (MockUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result, urls []string,
-	wg *sync.WaitGroup) int {
+func (MockUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result,
+	wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) int {
 	return rand.Intn(10) + 1
 }
 
@@ -40,18 +40,20 @@ func TestWorkerPool(t *testing.T) {
 	var wg sync.WaitGroup
 	//because test errors cannot be raised inside a goroutine, we need to make an channel to send and receive errors
 	errsCh := make(chan error, 10)
-	var urls = []string{
-		"https://www.google.com",
-		"https://www.methods.co.uk",
-		"https://www.github.com",
-		"https://www.stackoverflow.com"}
 	var expected = map[string]int{
-		"https://www.google.com":        200,
-		"https://www.methods.co.uk":     200,
-		"https://www.github.com":        200,
-		"https://www.stackoverflow.com": 200,
+		"https://www.google.com":                         200,
+		"https://www.methods.co.uk":                      200,
+		"https://www.github.com":                         200,
+		"https://www.stackoverflow.com":                  200,
+		"https://go.dev":                                 200,
+		"https://www.youtube.com":                        200,
+		"https://www.ons.gov.uk":                         200,
+		"https://coronavirusresources.phe.gov.uk/":       200,
+		"https://campaignresources.phe.gov.uk/resources": 200,
+		"https://www.twitter.com":                        200,
+		"https://www.facebook.com":                       200,
 	}
-	workerPool(urls, tasksCh, resultsCh, &wg, mus, mvs, mcc)
+	workerPool(tasksCh, resultsCh, &wg, mus, mvs, mcc)
 	go func() {
 		for result := range resultsCh {
 			expectedResponseCode := expected[result.url]
