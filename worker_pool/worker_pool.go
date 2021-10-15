@@ -76,7 +76,7 @@ func workerPool(tasksCh chan string, resultsCh chan Result, wg *sync.WaitGroup, 
 	return resultsCh
 }
 
-//function set up to receive from the urls channel and send to the results channel
+//function set up to receive from the tasks channel and send to the results channel
 func workerTask(id int, tasksCh <-chan string, resultsCh chan<- Result, wg *sync.WaitGroup) {
 	//each time a url from the tasks channel is used inside the workerTask function, it is removed from the tasks.
 	//because the tasks channel is never closed, workerTask goroutines will wait at start of for loop, and will only
@@ -91,6 +91,29 @@ func workerTask(id int, tasksCh <-chan string, resultsCh chan<- Result, wg *sync
 		//Result is sent to results channel
 		resultsCh <- Result{workerId: id, url: url, responseCode: resp.StatusCode, speed: timeElapsed}
 	}
+}
+
+func userInput(tasksCh chan<- string, resultsCh chan Result, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) {
+	fmt.Println("URLS:")
+	for i := 0; i < len(URLS); i++ {
+		fmt.Println(i+1, URLS[i])
+	}
+	scanner := bufio.NewScanner(os.Stdin)
+	index := us.SelectUrl(scanner, tasksCh, resultsCh, wg, us, vs, ucc)
+	visits := vs.SetNumberOfVisits(scanner)
+	for j := 0; j < visits; j++ {
+		tasksCh <- URLS[index]
+		wg.Add(1)
+	}
+	go func() {
+		wg.Wait()
+		c := ucc.Cont(scanner)
+		if !c {
+			close(resultsCh)
+			return
+		}
+		userInput(tasksCh, resultsCh, wg, us, vs, ucc)
+	}()
 }
 
 type UrlSelector interface {
@@ -157,27 +180,4 @@ func (cs StdInContinueChecker) Cont(scanner *bufio.Scanner) bool {
 	default:
 		return cs.Cont(scanner)
 	}
-}
-
-func userInput(tasksCh chan<- string, resultsCh chan Result, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) {
-	fmt.Println("URLS:")
-	for i := 0; i < len(URLS); i++ {
-		fmt.Println(i+1, URLS[i])
-	}
-	scanner := bufio.NewScanner(os.Stdin)
-	index := us.SelectUrl(scanner, tasksCh, resultsCh, wg, us, vs, ucc)
-	visits := vs.SetNumberOfVisits(scanner)
-	for j := 0; j < visits; j++ {
-		tasksCh <- URLS[index]
-		wg.Add(1)
-	}
-	go func() {
-		wg.Wait()
-		c := ucc.Cont(scanner)
-		if !c {
-			close(resultsCh)
-			return
-		}
-		userInput(tasksCh, resultsCh, wg, us, vs, ucc)
-	}()
 }
