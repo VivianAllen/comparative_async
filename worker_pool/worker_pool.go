@@ -34,6 +34,7 @@ func main() {
 	//wait group is a counter that we can use to keep track of asynchronous tasks as they are completed so that when
 	//finished, results channel can be closed and main function can return
 	var wg sync.WaitGroup
+	//sets up structs which will implement user input interfaces
 	userUrlSelector := StdInUrlSelector{}
 	userVisitsSetter := StdinVisitsSetter{}
 	userContinueChecker := StdInContinueChecker{}
@@ -53,6 +54,7 @@ type Result struct {
 	speed        float64
 }
 
+//workerPool function sets up worker pool, sends tasks to tasks channel and calls userInput once tasks have completed
 //function takes in interfaces for UrlSelector, VisitsSetter and ContinueChecker to allow for mocking
 func workerPool(tasksCh chan string, resultsCh chan Result, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) chan Result {
 	//sets up worker pool
@@ -76,6 +78,7 @@ func workerPool(tasksCh chan string, resultsCh chan Result, wg *sync.WaitGroup, 
 	return resultsCh
 }
 
+//workerTask receives URLs from the tasks channel, executes task and sends results to results channel
 //function set up to receive from the tasks channel and send to the results channel
 func workerTask(id int, tasksCh <-chan string, resultsCh chan<- Result, wg *sync.WaitGroup) {
 	//each time a url from the tasks channel is used inside the workerTask function, it is removed from the tasks.
@@ -93,37 +96,65 @@ func workerTask(id int, tasksCh <-chan string, resultsCh chan<- Result, wg *sync
 	}
 }
 
-func userInput(tasksCh chan<- string, resultsCh chan Result, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) {
+//userInput coordinates
+func userInput(tasksCh chan<- string, resultsCh chan Result, wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter,
+	ucc ContinueChecker) {
+	//Prints URLs in terminal
 	fmt.Println("URLS:")
 	for i := 0; i < len(URLS); i++ {
 		fmt.Println(i+1, URLS[i])
 	}
+	//sets up scanner to scan for user input
 	scanner := bufio.NewScanner(os.Stdin)
+	//sets index of url to check
 	index := us.SelectUrl(scanner, tasksCh, resultsCh, wg, us, vs, ucc)
+	//sets number of times to visit URL
 	visits := vs.SetNumberOfVisits(scanner)
+	//sends selected url to the tasks channel as many times as requested
 	for j := 0; j < visits; j++ {
 		tasksCh <- URLS[index]
 		wg.Add(1)
 	}
 	go func() {
+		//function will wait for wait group to reach zero before executing
 		wg.Wait()
+		//checks if user wants to continue
 		c := ucc.Cont(scanner)
+		//if user doesn't want to continue, closes results channel and exits function
 		if !c {
 			close(resultsCh)
 			return
 		}
+		//else calls userInput function again
 		userInput(tasksCh, resultsCh, wg, us, vs, ucc)
 	}()
 }
 
+//sets up interfaces to select URL, set number of visits and check continue
 type UrlSelector interface {
 	SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result, wg *sync.WaitGroup,
 		us UrlSelector, vs VisitsSetter, ucc ContinueChecker) int
 }
 
+type VisitsSetter interface {
+	SetNumberOfVisits(scanner *bufio.Scanner) int
+}
+
+type ContinueChecker interface {
+	Cont(scanner *bufio.Scanner) bool
+}
+
+//sets up structs to implement above interfaces with user input methods
 type StdInUrlSelector struct {
 }
 
+type StdinVisitsSetter struct {
+}
+
+type StdInContinueChecker struct {
+}
+
+//user input methods
 func (StdInUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string, resultsCh chan Result,
 	wg *sync.WaitGroup, us UrlSelector, vs VisitsSetter, ucc ContinueChecker) int {
 	fmt.Println("Enter a number between 1 and 11 and press return to run an extended speed test on one of these urls.")
@@ -139,13 +170,6 @@ func (StdInUrlSelector) SelectUrl(scanner *bufio.Scanner, tasksCh chan<- string,
 	return index - 1
 }
 
-type VisitsSetter interface {
-	SetNumberOfVisits(scanner *bufio.Scanner) int
-}
-
-type StdinVisitsSetter struct {
-}
-
 func (StdinVisitsSetter) SetNumberOfVisits(scanner *bufio.Scanner) int {
 	fmt.Println("How many times would you like to check this url?  Enter a number between 1 and 30.")
 	scanner.Scan()
@@ -159,13 +183,6 @@ func (StdinVisitsSetter) SetNumberOfVisits(scanner *bufio.Scanner) int {
 		visits = 30
 	}
 	return visits
-}
-
-type ContinueChecker interface {
-	Cont(scanner *bufio.Scanner) bool
-}
-
-type StdInContinueChecker struct {
 }
 
 func (cs StdInContinueChecker) Cont(scanner *bufio.Scanner) bool {

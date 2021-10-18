@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+//sets up mock structs to implement user input interfaces (allowing tests to execute without user input)
+
 type MockUrlSelector struct {
 }
 
@@ -31,14 +33,14 @@ func (MockContinueChecker) Cont(scanner *bufio.Scanner) bool {
 }
 
 func TestWorkerPool(t *testing.T) {
-	//sets up mock functions
+	//initialises mock structs
 	mus := MockUrlSelector{}
 	mvs := MockVisitsSetter{}
 	mcc := MockContinueChecker{}
 	tasksCh := make(chan string, 10)
 	resultsCh := make(chan Result)
 	var wg sync.WaitGroup
-	//because test errors cannot be raised inside a goroutine, we need to make an channel to send and receive errors
+	//test errors cannot be raised inside a goroutine, so instead we need to make a channel to send and receive errors
 	errsCh := make(chan error, 10)
 	var expected = map[string]int{
 		"https://www.google.com":                         200,
@@ -55,6 +57,7 @@ func TestWorkerPool(t *testing.T) {
 	}
 	workerPool(tasksCh, resultsCh, &wg, mus, mvs, mcc)
 	go func() {
+		//for loop ranges over results channel which will eventually be closed by userInput function
 		for result := range resultsCh {
 			expectedResponseCode := expected[result.url]
 			if result.responseCode != expectedResponseCode {
